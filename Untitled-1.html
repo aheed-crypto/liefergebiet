@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liefergebiet prüfen</title>
+    <!-- Leaflet CSS einbinden -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #map {
+            height: 500px; /* Höhe der Karte */
+            width: 100%; /* Breite der Karte */
+            max-width: 800px;
+            margin-top: 20px;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Liefergebiet prüfen</h1>
+    <!-- Adresseingabe -->
+    <input id="address" type="text" placeholder="Ihre Adresse eingeben" style="width: 300px;">
+    <button onclick="checkAddress()">Prüfen</button>
+    <div id="map"></div>
+
+    <!-- Leaflet JavaScript einbinden -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // 1. Karte initialisieren
+        const map = L.map('map').setView([50.4197, 12.5393], 13); // Koordinaten deines Restaurants
+
+        // 2. OpenStreetMap-Kacheln hinzufügen
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // 3. Kreis mit 20 km Radius hinzufügen
+        const radius = 20000; // 20 km in Metern
+        const circle = L.circle([50.6981476817261, 12.435892351904444], { // Koordinaten deines Restaurants
+            color: 'red',
+            fillColor: '#f03',
+            fillOpacity: 0.3,
+            radius: radius
+        }).addTo(map);
+
+        // 4. Marker für das Restaurant setzen
+        const restaurantMarker = L.marker([50.6981476817261, 12.435892351904444]).addTo(map)
+            .bindPopup("Euphrat Grillhaus und Pension")
+            .openPopup();
+
+        // 5. Adresse überprüfen (OpenCage API)
+        async function checkAddress() {
+            const address = document.getElementById('address').value;
+            const apiKey = '59ab9e8027c94ba0a34bafcc2c7c3cd6'; // Ersetze durch deinen OpenCage API-Schlüssel
+            if (!address) {
+                alert("Bitte geben Sie eine Adresse ein!");
+                return;
+            }
+
+            // API-Anfrage senden
+            try {
+                const response = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(address)}&key=${apiKey}`);
+                const data = await response.json();
+
+                if (data.results.length === 0) {
+                    alert("Adresse konnte nicht gefunden werden. Bitte versuchen Sie es erneut.");
+                    return;
+                }
+
+                const { lat, lng } = data.results[0].geometry;
+                const distance = map.distance([lat, lng], [50.6981476817261, 12.435892351904444]); // Restaurant-Koordinaten
+                if (distance <= radius) {
+                    alert("Die Adresse liegt im Liefergebiet.");
+                } else {
+                    alert("Die Adresse liegt außerhalb des Liefergebiets.");
+                }
+            } catch (error) {
+                alert("Fehler bei der Adressprüfung. Bitte versuchen Sie es erneut.");
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>
